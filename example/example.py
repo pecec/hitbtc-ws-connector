@@ -35,7 +35,7 @@ def getPubSecKeys( fname ):
             break
     f.close()
     return lines[0], lines[1]
-    
+
 async def connectorControlThread( _connector ):
     print( 'counting to 20...' )
     for i in range( 1, 21 ):
@@ -45,7 +45,7 @@ async def connectorControlThread( _connector ):
     await asyncio.sleep(2)
     await _connector.stop()
 
-    
+
 """
     def __init__(self, key=None, secret=None, raw=None, stdout_only=False, silent=False, url=None,
                  **conn_ops):
@@ -61,37 +61,31 @@ async def connectorControlThread( _connector ):
         :param conn_ops: Optional Kwargs to pass to the HitBTCConnector object
 """
 
-url = 'wss://api.hitbtc.com/api/2/ws'
-certFile = 'hitbtc-com-chain.pem'
-keysFile = 'pubseckeys.txt'
+async def main():
+    url = 'wss://api.hitbtc.com/api/2/ws'
+    certFile = 'hitbtc-com-chain.pem'
+    keysFile = 'pubseckeys.txt'
 
-pub, sec = getPubSecKeys( keysFile )
+    pub, sec = getPubSecKeys( keysFile )
 
-if not os.path.isfile( certFile ):
-    raise ValueError( 'File doesn\'t exist: %s' % certFile )
+    if not os.path.isfile( certFile ):
+        raise ValueError( 'File doesn\'t exist: %s' % certFile )
 
-hitbtc = HitBTC( pub, sec, False, True, False, url,
-                 pathlib.Path(__file__).with_name( certFile ) )
+    hitbtc = HitBTC( pub, sec, False, True, False, url,
+                     pathlib.Path(__file__).with_name( certFile ) )
 
-loop = asyncio.get_event_loop()
+    await hitbtc.connect()
+    await hitbtc.login( pub, sec, True )
+    await hitbtc.recvProcessResponse( myCallback )
+    await hitbtc.subscribe_ticker( symbol='ETHBTC' )
+    await hitbtc.recvProcessResponse( myCallback )
 
-loop.run_until_complete( hitbtc.connect() )
-time.sleep(2)  # Give the socket some time to connect
-                         
-loop.run_until_complete( hitbtc.login( pub, sec, True ) )
-loop.run_until_complete( hitbtc.recvProcessResponse( myCallback ) )
-#time.sleep(2)
+    tasks = [
+        asyncio.ensure_future( hitbtc.messageLoop( myCallback ) ),
+        asyncio.ensure_future( connectorControlThread( hitbtc ) )
+        ]
 
-loop.run_until_complete( hitbtc.subscribe_ticker( symbol='ETHBTC' ) )
-loop.run_until_complete( hitbtc.recvProcessResponse( myCallback ) )
-#time.sleep(2)
-
-
-tasks = [
-    asyncio.ensure_future( hitbtc.messageLoop( myCallback ) ),
-    asyncio.ensure_future( connectorControlThread( hitbtc ) )
-    ]
-
-loop.run_until_complete( asyncio.wait( tasks ) )
+    await asyncio.wait( tasks )
 
 
+asyncio.run(main())
