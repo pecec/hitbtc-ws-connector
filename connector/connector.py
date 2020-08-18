@@ -262,7 +262,7 @@ class HitBTCConnector(WebSocketConnector):
         if not self._is_connected:
             self.echo("Cannot Send payload - Connection not established!")
             return
-        payload = {'method': method, 'params': params, 'id': custom_id or int(10000 * time.time())}
+        payload = {'method': method, 'params': params, 'id': custom_id or int( 1000 * time.time() )}
         if not self.raw:
             self.requests[payload['id']] = payload
         self.log.debug("Sending: %s", payload)
@@ -276,13 +276,13 @@ class HitBTCConnector(WebSocketConnector):
             payload = {'sKey': skey}
         else:
             algo = 'HS256'
-            nonce = custom_nonce or str(round(time.time() * 1000))
+            nonce = custom_nonce or str( round( int( time.time() * 1000 ) ) )
             signature = hmac.new(secret.encode('UTF-8'), nonce.encode('UTF-8'), hashlib.sha256).hexdigest()
             payload = {'nonce': nonce, 'signature': signature}
 
         payload['algo'] = algo
         payload['pKey'] = key
-        await self.send('login', **payload)
+        await self.send( 'login', **payload )
 
 
 

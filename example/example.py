@@ -75,7 +75,7 @@ async def main():
                      pathlib.Path(__file__).with_name( certFile ) )
 
     await hitbtc.connect()
-    await hitbtc.login( pub, sec, True )
+    await hitbtc.login( pub, sec, False, str( 15936637471129 ) )
     await hitbtc.recvProcessResponse( myCallback )
     await hitbtc.subscribe_ticker( symbol='ETHBTC' )
     await hitbtc.recvProcessResponse( myCallback )
